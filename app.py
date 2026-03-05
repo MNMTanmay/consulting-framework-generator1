@@ -105,7 +105,7 @@ Query:
 """
 
     response = client.chat.completions.create(
-        model="mixtral-8x7b-32768",
+        model="llama-3.3-70b-versatile",
         messages=[{"role":"user","content":prompt}]
     )
 
@@ -153,7 +153,7 @@ Query:
 """
 
     response=client.chat.completions.create(
-        model="mixtral-8x7b-32768",
+        model="llama-3.3-70b-versatile",
         messages=[{"role":"user","content":prompt}],
         temperature=0.3
     )
