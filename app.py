@@ -7,7 +7,7 @@ st.title("AI Consulting Framework Generator")
 
 query = st.text_area("Paste Client Query")
 
-client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 system_prompt = """
 You are a senior strategy consulting research architect.
