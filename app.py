@@ -1,31 +1,35 @@
 import streamlit as st
-import openai
-
-st.set_page_config(page_title="AI Consulting Framework Generator")
+from openai import OpenAI
+import docx
+from io import BytesIO
 
 st.title("AI Consulting Framework Generator")
 
-st.write("Paste a client query and generate a consulting research framework.")
+query = st.text_area("Paste Client Query")
 
-query = st.text_area("Client Query")
+client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
-openai.api_key = "PASTE_YOUR_OPENAI_API_KEY"
-
-if st.button("Generate Framework"):
-
-    system_prompt = """
+system_prompt = """
 You are a senior strategy consulting research architect.
 
-Your task is to transform any client query into a consulting project framework.
+When a client query is given you must:
 
-Steps:
+STEP 1 — Detect Industry
+Identify the industry sector.
 
-1 Detect the industry
-2 Detect the project type
-3 Extract stakeholders and objectives
-4 Generate consulting modules
+STEP 2 — Detect Project Type
+Classify the project into:
+Market Study
+Market Entry
+Technology Assessment
+Competitive Intelligence
+M&A Opportunity
 
-Each module must include:
+STEP 3 — Build Consulting Framework
+
+Create 6–8 consulting modules.
+
+Each module must contain:
 
 MODULE TITLE
 Objective
@@ -33,13 +37,21 @@ Key Questions
 Analysis Required
 Deliverables
 
-After modules, generate a structured consulting Table of Contents.
+STEP 4 — Generate Structured Table of Contents
 
-The framework must adapt depending on the query topic.
+The framework must adapt depending on the industry.
+
+Examples:
+
+Healthcare → include regulatory and clinical workflow
+Data Centers → include hyperscalers, GPUs, power demand
+Chemicals → include value chain and feedstock
 """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
+if st.button("Generate Framework"):
+
+    response = client.chat.completions.create(
+        model="gpt-4o",
         messages=[
             {"role":"system","content":system_prompt},
             {"role":"user","content":query}
@@ -47,6 +59,21 @@ The framework must adapt depending on the query topic.
         temperature=0.7
     )
 
-    result = response["choices"][0]["message"]["content"]
+    result = response.choices[0].message.content
 
     st.write(result)
+
+    # Create Word file
+    doc = docx.Document()
+    doc.add_heading("Consulting Framework", level=1)
+    doc.add_paragraph(result)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+
+    st.download_button(
+        label="Download Word",
+        data=buffer.getvalue(),
+        file_name="consulting_framework.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
