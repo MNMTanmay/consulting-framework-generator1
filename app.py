@@ -1,32 +1,78 @@
 import streamlit as st
 from groq import Groq
 from docx import Document
+import json
 
-st.set_page_config(page_title="Consulting AI Framework Generator")
-
-st.title("AI Consulting Framework Generator")
+st.title("Consulting AI Intelligence Engine")
 
 query = st.text_area("Paste Client Query")
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+CURRENT_YEAR = 2025
+FORECAST_YEAR = 2030
 
-# -----------------------------
-# INDUSTRY DETECTION
-# -----------------------------
 
-def detect_industry(query):
+# ------------------------------------------------
+# FRAMEWORK LIBRARY
+# ------------------------------------------------
 
-    prompt = f"""
-Extract the following from the client query.
+FRAMEWORK_LIBRARY = {
+
+"market_opportunity":[
+"Industry Overview",
+"Product Definition",
+"Application Landscape",
+"Market Drivers",
+"Technology Trends",
+"Regulatory Landscape",
+"Competitive Landscape",
+"Market Size Analysis",
+"Forecast Opportunities",
+"High Growth Segments"
+],
+
+"technology_landscape":[
+"Industry Overview",
+"Technology Architecture",
+"Key Applications",
+"Emerging Use Cases",
+"Innovation Trends",
+"Technology Roadmap",
+"Key Technology Companies"
+],
+
+"market_entry":[
+"Industry Overview",
+"Market Structure",
+"Competitive Landscape",
+"Customer Segments",
+"Regulatory Barriers",
+"Entry Strategy Options",
+"Implementation Roadmap"
+]
+
+}
+
+
+# ------------------------------------------------
+# QUERY PARSER
+# ------------------------------------------------
+
+def parse_query(query):
+
+    prompt=f"""
+Extract structured data from the client query.
 
 Return JSON format.
 
 Fields:
 Industry
-Product_or_Technology
+Product
 Applications
+Geography
 Project_Type
+Keywords
 
 Query:
 {query}
@@ -40,43 +86,73 @@ Query:
     return response.choices[0].message.content
 
 
-# -----------------------------
-# FRAMEWORK GENERATOR
-# -----------------------------
+# ------------------------------------------------
+# PROJECT TYPE DETECTION
+# ------------------------------------------------
 
-def generate_framework(query):
+def detect_project_type(query):
 
-    prompt = f"""
-You are a senior strategy consulting architect.
+    prompt=f"""
+Classify the consulting project type.
 
-Create a consulting research framework for the following client query.
-
-The framework must include:
-
-1. Industry Definition
-2. Product / Technology Definition
-3. Key Applications
-4. Emerging Applications
-5. Market Drivers
-6. Technology Trends
-7. Regulatory Landscape
-8. Competitive Landscape (Key Manufacturers)
-9. Market Size (2025) and Forecast (2030)
-10. High Growth Opportunities
-11. Research Methodology
-
-Each section must contain:
-
-Objective
-Key Questions
-Analysis Required
-Deliverables
+Options:
+market_opportunity
+technology_landscape
+market_entry
 
 Query:
 {query}
 """
 
     response = client.chat.completions.create(
+        model="mixtral-8x7b-32768",
+        messages=[{"role":"user","content":prompt}]
+    )
+
+    return response.choices[0].message.content.strip()
+
+
+# ------------------------------------------------
+# TOC GENERATOR
+# ------------------------------------------------
+
+def build_toc(framework):
+
+    toc=""
+
+    for i,section in enumerate(framework,1):
+
+        toc+=f"{i}. {section}\n"
+
+    return toc
+
+
+# ------------------------------------------------
+# MODULE GENERATOR
+# ------------------------------------------------
+
+def generate_modules(query,framework):
+
+    prompt=f"""
+Create consulting research modules.
+
+Sections:
+{framework}
+
+For each section include:
+
+Objective
+Key Questions
+Analysis Required
+Deliverables
+
+Also include market sizing for {CURRENT_YEAR} and forecast to {FORECAST_YEAR} where relevant.
+
+Query:
+{query}
+"""
+
+    response=client.chat.completions.create(
         model="mixtral-8x7b-32768",
         messages=[{"role":"user","content":prompt}],
         temperature=0.3
@@ -85,32 +161,22 @@ Query:
     return response.choices[0].message.content
 
 
-# -----------------------------
-# TOC GENERATOR
-# -----------------------------
+# ------------------------------------------------
+# KEY PLAYER DETECTION
+# ------------------------------------------------
 
-def generate_toc(query):
+def detect_players(query):
 
-    prompt = f"""
-Create a consulting style Table of Contents.
+    prompt=f"""
+Identify leading manufacturers or companies relevant to this market.
 
-Include:
-
-Industry definition
-Product definition
-Applications
-Market size
-Technology trends
-Competitive landscape
-Regulation
-Opportunities
-Forecast 2025–2030
+Return 5–10 companies.
 
 Query:
 {query}
 """
 
-    response = client.chat.completions.create(
+    response=client.chat.completions.create(
         model="mixtral-8x7b-32768",
         messages=[{"role":"user","content":prompt}]
     )
@@ -118,50 +184,100 @@ Query:
     return response.choices[0].message.content
 
 
-# -----------------------------
-# WORD EXPORT
-# -----------------------------
+# ------------------------------------------------
+# RESEARCH METHODOLOGY
+# ------------------------------------------------
 
-def create_word(framework):
+def research_methodology():
 
-    doc = Document()
-    doc.add_heading("Consulting Research Framework", level=1)
+    return """
+Research Methodology
 
-    for line in framework.split("\n"):
-        doc.add_paragraph(line)
+• Secondary research across industry databases
+• Patent and innovation analysis
+• Competitive benchmarking
+• Supply chain mapping
+• Expert interviews with industry stakeholders
+• Market sizing using top-down and bottom-up methods
+"""
 
-    doc.save("framework.docx")
+
+# ------------------------------------------------
+# WORD REPORT
+# ------------------------------------------------
+
+def create_word(query,toc,modules,players):
+
+    doc=Document()
+
+    doc.add_heading("Consulting Research Framework",level=1)
+
+    doc.add_heading("Client Query",level=2)
+    doc.add_paragraph(query)
+
+    doc.add_heading("Table of Contents",level=2)
+    doc.add_paragraph(toc)
+
+    doc.add_heading("Key Companies",level=2)
+    doc.add_paragraph(players)
+
+    doc.add_heading("Consulting Modules",level=2)
+    doc.add_paragraph(modules)
+
+    doc.add_heading("Research Methodology",level=2)
+    doc.add_paragraph(research_methodology())
+
+    doc.save("consulting_framework.docx")
 
 
-# -----------------------------
-# UI BUTTON
-# -----------------------------
+# ------------------------------------------------
+# MAIN ENGINE
+# ------------------------------------------------
 
-if st.button("Generate Framework"):
+if st.button("Generate Consulting Framework"):
 
-    st.subheader("Industry Detection")
+    st.subheader("Query Analysis")
 
-    industry = detect_industry(query)
+    parsed=parse_query(query)
 
-    st.write(industry)
+    st.write(parsed)
+
+    project_type=detect_project_type(query)
+
+    st.subheader("Project Type")
+
+    st.write(project_type)
+
+    if project_type not in FRAMEWORK_LIBRARY:
+
+        project_type="market_opportunity"
+
+    framework=FRAMEWORK_LIBRARY[project_type]
+
+    toc=build_toc(framework)
 
     st.subheader("Dynamic Table of Contents")
 
-    toc = generate_toc(query)
-
     st.write(toc)
 
-    st.subheader("Consulting Framework")
+    modules=generate_modules(query,framework)
 
-    framework = generate_framework(query)
+    st.subheader("Consulting Modules")
 
-    st.write(framework)
+    st.write(modules)
 
-    create_word(framework)
+    players=detect_players(query)
 
-    with open("framework.docx", "rb") as file:
+    st.subheader("Key Companies")
+
+    st.write(players)
+
+    create_word(query,toc,modules,players)
+
+    with open("consulting_framework.docx","rb") as f:
+
         st.download_button(
             label="Download Word Report",
-            data=file,
-            file_name="Consulting_Framework.docx"
+            data=f,
+            file_name="consulting_framework.docx"
         )
