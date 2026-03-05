@@ -1,34 +1,33 @@
 import streamlit as st
-from openai import OpenAI
+from groq import Groq
 
 st.title("AI Consulting Framework Generator")
 
 query = st.text_area("Paste Client Query")
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 system_prompt = """
-You are a senior strategy consulting research architect.
+You are a senior strategy consulting architect.
 
 Steps:
 1. Detect industry
-2. Detect project type
-3. Build consulting modules
+2. Detect consulting project type
+3. Create research modules
 
 Each module must include:
-- Module Title
 - Objective
 - Key Questions
 - Analysis Required
 - Deliverables
 
-Then generate a structured Table of Contents.
+Finally generate a structured consulting Table of Contents.
 """
 
 if st.button("Generate Framework"):
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="llama3-70b-8192",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query}
