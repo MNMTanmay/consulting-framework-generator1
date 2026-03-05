@@ -3,6 +3,8 @@ from groq import Groq
 from docx import Document
 import json
 
+st.set_page_config(page_title="Consulting AI Intelligence Engine")
+
 st.title("Consulting AI Intelligence Engine")
 
 query = st.text_area("Paste Client Query")
@@ -12,48 +14,52 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 CURRENT_YEAR = 2025
 FORECAST_YEAR = 2030
 
-
 # ------------------------------------------------
-# FRAMEWORK LIBRARY
+# CONSULTING FRAMEWORK LIBRARY
 # ------------------------------------------------
 
 FRAMEWORK_LIBRARY = {
 
 "market_opportunity":[
 "Industry Overview",
+"Industry Value Chain",
 "Product Definition",
+"Technology Architecture",
 "Application Landscape",
-"Market Drivers",
-"Technology Trends",
+"Material Substitution Analysis",
+"Technology Roadmap",
 "Regulatory Landscape",
 "Competitive Landscape",
+"Regional Market Analysis",
 "Market Size Analysis",
-"Forecast Opportunities",
-"High Growth Segments"
+"Revenue Pools by Application",
+"High Growth Segments",
+"Strategic Opportunity Matrix"
 ],
 
 "technology_landscape":[
 "Industry Overview",
 "Technology Architecture",
+"Material Chemistry",
 "Key Applications",
 "Emerging Use Cases",
 "Innovation Trends",
-"Technology Roadmap",
-"Key Technology Companies"
+"Patent Landscape",
+"Key Technology Players"
 ],
 
 "market_entry":[
 "Industry Overview",
 "Market Structure",
-"Competitive Landscape",
 "Customer Segments",
+"Competitive Landscape",
 "Regulatory Barriers",
 "Entry Strategy Options",
+"Partnership Opportunities",
 "Implementation Roadmap"
 ]
 
 }
-
 
 # ------------------------------------------------
 # QUERY PARSER
@@ -62,11 +68,10 @@ FRAMEWORK_LIBRARY = {
 def parse_query(query):
 
     prompt=f"""
-Extract structured data from the client query.
+Extract structured information from the client query.
 
-Return JSON format.
+Return JSON with fields:
 
-Fields:
 Industry
 Product
 Applications
@@ -74,11 +79,37 @@ Geography
 Project_Type
 Keywords
 
+If geography not mentioned assume Global.
+
 Query:
 {query}
 """
 
     response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.2
+    )
+
+    return response.choices[0].message.content
+
+
+# ------------------------------------------------
+# INDUSTRY DETECTION
+# ------------------------------------------------
+
+def detect_industry(query):
+
+    prompt=f"""
+Identify the industry context of this query.
+
+Query:
+{query}
+
+Return a short explanation.
+"""
+
+    response=client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role":"user","content":prompt}]
     )
@@ -96,15 +127,18 @@ def detect_project_type(query):
 Classify the consulting project type.
 
 Options:
+
 market_opportunity
 technology_landscape
 market_entry
 
 Query:
 {query}
+
+Return only the classification.
 """
 
-    response = client.chat.completions.create(
+    response=client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role":"user","content":prompt}]
     )
@@ -113,18 +147,111 @@ Query:
 
 
 # ------------------------------------------------
-# TOC GENERATOR
+# BATTERY / SYSTEM ARCHITECTURE
 # ------------------------------------------------
 
-def build_toc(framework):
+def architecture_mapping(query):
 
-    toc=""
+    prompt=f"""
+Map the system architecture relevant to this query.
 
-    for i,section in enumerate(framework,1):
+For example for EV batteries include:
 
-        toc+=f"{i}. {section}\n"
+Cell
+Module
+Pack
+Thermal Management
+Battery Electronics
 
-    return toc
+Explain where the product fits in the architecture.
+
+Query:
+{query}
+"""
+
+    response=client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role":"user","content":prompt}]
+    )
+
+    return response.choices[0].message.content
+
+
+# ------------------------------------------------
+# MATERIAL SUBSTITUTION ANALYSIS
+# ------------------------------------------------
+
+def material_comparison(query):
+
+    prompt=f"""
+Compare the product in this query with alternative materials.
+
+Include:
+
+Performance
+Thermal properties
+Cost
+Advantages
+Limitations
+
+Query:
+{query}
+"""
+
+    response=client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role":"user","content":prompt}]
+    )
+
+    return response.choices[0].message.content
+
+
+# ------------------------------------------------
+# APPLICATION REVENUE POOLS
+# ------------------------------------------------
+
+def revenue_pools(query):
+
+    prompt=f"""
+Identify revenue pools for the product in this market.
+
+Break down by application.
+
+Include estimated opportunity and growth drivers.
+
+Query:
+{query}
+"""
+
+    response=client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role":"user","content":prompt}]
+    )
+
+    return response.choices[0].message.content
+
+
+# ------------------------------------------------
+# KEY PLAYERS
+# ------------------------------------------------
+
+def detect_players(query):
+
+    prompt=f"""
+Identify leading companies in this market.
+
+Return 8-10 companies with short description.
+
+Query:
+{query}
+"""
+
+    response=client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role":"user","content":prompt}]
+    )
+
+    return response.choices[0].message.content
 
 
 # ------------------------------------------------
@@ -146,7 +273,7 @@ Key Questions
 Analysis Required
 Deliverables
 
-Also include market sizing for {CURRENT_YEAR} and forecast to {FORECAST_YEAR} where relevant.
+Include market year {CURRENT_YEAR} and forecast {FORECAST_YEAR} where relevant.
 
 Query:
 {query}
@@ -162,51 +289,10 @@ Query:
 
 
 # ------------------------------------------------
-# KEY PLAYER DETECTION
-# ------------------------------------------------
-
-def detect_players(query):
-
-    prompt=f"""
-Identify leading manufacturers or companies relevant to this market.
-
-Return 5–10 companies.
-
-Query:
-{query}
-"""
-
-    response=client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role":"user","content":prompt}]
-    )
-
-    return response.choices[0].message.content
-
-
-# ------------------------------------------------
-# RESEARCH METHODOLOGY
-# ------------------------------------------------
-
-def research_methodology():
-
-    return """
-Research Methodology
-
-• Secondary research across industry databases
-• Patent and innovation analysis
-• Competitive benchmarking
-• Supply chain mapping
-• Expert interviews with industry stakeholders
-• Market sizing using top-down and bottom-up methods
-"""
-
-
-# ------------------------------------------------
 # WORD REPORT
 # ------------------------------------------------
 
-def create_word(query,toc,modules,players):
+def create_word(query,industry,architecture,materials,revenue,players,modules):
 
     doc=Document()
 
@@ -215,17 +301,23 @@ def create_word(query,toc,modules,players):
     doc.add_heading("Client Query",level=2)
     doc.add_paragraph(query)
 
-    doc.add_heading("Table of Contents",level=2)
-    doc.add_paragraph(toc)
+    doc.add_heading("Industry Context",level=2)
+    doc.add_paragraph(industry)
+
+    doc.add_heading("System Architecture",level=2)
+    doc.add_paragraph(architecture)
+
+    doc.add_heading("Material Substitution Analysis",level=2)
+    doc.add_paragraph(materials)
+
+    doc.add_heading("Revenue Pools",level=2)
+    doc.add_paragraph(revenue)
 
     doc.add_heading("Key Companies",level=2)
     doc.add_paragraph(players)
 
     doc.add_heading("Consulting Modules",level=2)
     doc.add_paragraph(modules)
-
-    doc.add_heading("Research Methodology",level=2)
-    doc.add_paragraph(research_methodology())
 
     doc.save("consulting_framework.docx")
 
@@ -239,40 +331,46 @@ if st.button("Generate Consulting Framework"):
     st.subheader("Query Analysis")
 
     parsed=parse_query(query)
-
     st.write(parsed)
+
+    st.subheader("Industry Detection")
+
+    industry=detect_industry(query)
+    st.write(industry)
 
     project_type=detect_project_type(query)
 
-    st.subheader("Project Type")
-
-    st.write(project_type)
-
     if project_type not in FRAMEWORK_LIBRARY:
-
         project_type="market_opportunity"
 
     framework=FRAMEWORK_LIBRARY[project_type]
 
-    toc=build_toc(framework)
+    st.subheader("Architecture Mapping")
 
-    st.subheader("Dynamic Table of Contents")
+    architecture=architecture_mapping(query)
+    st.write(architecture)
 
-    st.write(toc)
+    st.subheader("Material Substitution")
 
-    modules=generate_modules(query,framework)
+    materials=material_comparison(query)
+    st.write(materials)
 
-    st.subheader("Consulting Modules")
+    st.subheader("Revenue Pools")
 
-    st.write(modules)
-
-    players=detect_players(query)
+    revenue=revenue_pools(query)
+    st.write(revenue)
 
     st.subheader("Key Companies")
 
+    players=detect_players(query)
     st.write(players)
 
-    create_word(query,toc,modules,players)
+    st.subheader("Consulting Modules")
+
+    modules=generate_modules(query,framework)
+    st.write(modules)
+
+    create_word(query,industry,architecture,materials,revenue,players,modules)
 
     with open("consulting_framework.docx","rb") as f:
 
